@@ -1,0 +1,139 @@
+AWSTemplateFormatVersion: "2010-09-09"
+
+Description: Create SecurityGroup
+
+Parameters:
+#SSH接続用IPアドレス
+  YourLocalIpAdress:
+    Description: local IP Adress for SSH connect to the EC2
+    Type: String
+    MinLength: 9
+    MaxLength: 18
+    Default: 0.0.0.0/0
+
+Resources:
+# EC2用のセキュリティグループ
+  EC2SecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupName: EC2-SecurityGroup
+      GroupDescription: For EC2
+      VpcId: !ImportValue VpcId
+      SecurityGroupIngress:
+      - 
+        IpProtocol: tcp
+        CidrIp: !Ref YourLocalIpAdress 
+        FromPort: "22"
+        ToPort: "22"
+      - 
+        IpProtocol: tcp
+        SourceSecurityGroupId: !GetAtt ALBSecurityGroup.GroupId
+        FromPort: "80"
+        ToPort: "80"
+      - 
+        IpProtocol: tcp
+        CidrIp: '0.0.0.0/0'
+        FromPort: "3000"
+        ToPort: "3000"    
+
+      Tags: 
+      - 
+        Key: "Name"
+        Value: "lecture10"
+
+
+  EC2Egress3306:
+    Type: AWS::EC2::SecurityGroupEgress
+    Properties:
+      IpProtocol: tcp
+      GroupId: !GetAtt EC2SecurityGroup.GroupId
+      DestinationSecurityGroupId: !GetAtt RDSSecurityGroup.GroupId
+      FromPort: "3306"
+      ToPort: "3306"
+
+  EC2Egress80:
+    Type: AWS::EC2::SecurityGroupEgress
+    Properties:
+      IpProtocol: tcp
+      GroupId: !GetAtt EC2SecurityGroup.GroupId
+      CidrIp: '0.0.0.0/0'
+      FromPort: "80"
+      ToPort: "80"
+
+  EC2Egress443:
+    Type: AWS::EC2::SecurityGroupEgress
+    Properties:
+      IpProtocol: tcp
+      GroupId: !GetAtt EC2SecurityGroup.GroupId
+      CidrIp: '0.0.0.0/0'
+      FromPort: "443"
+      ToPort: "443"        
+      
+
+
+# RDS用のセキュリティグループ
+  RDSSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupName: RDS-SecurityGroup
+      GroupDescription: For RDS
+      VpcId: !ImportValue VpcId
+      Tags: 
+      - 
+        Key: "Name"
+        Value: "lecture10"
+
+  RDSIngress:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      IpProtocol: tcp
+      GroupId: !GetAtt RDSSecurityGroup.GroupId
+      SourceSecurityGroupId: !GetAtt EC2SecurityGroup.GroupId
+      FromPort: "3306"
+      ToPort: "3306"
+
+# ALB用のセキュリティグループ
+  ALBSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupName: ALB-SecurityGroup
+      GroupDescription: For ALB
+      VpcId: !ImportValue VpcId
+      Tags: 
+      - 
+        Key: "Name"
+        Value: "lecture10"
+
+  ALBIngress:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      IpProtocol: tcp
+      GroupId: !GetAtt ALBSecurityGroup.GroupId
+      CidrIp: '0.0.0.0/0'
+      FromPort: "80"
+      ToPort: "80"
+
+  ALBEgress:
+    Type: AWS::EC2::SecurityGroupEgress
+    Properties:
+      IpProtocol: -1
+      GroupId: !GetAtt ALBSecurityGroup.GroupId
+      DestinationSecurityGroupId: !GetAtt EC2SecurityGroup.GroupId
+
+    
+Outputs:
+
+  EC2sg:
+    Value: !Ref EC2SecurityGroup
+    Export:
+      Name: EC2sg
+
+  RDSsg:
+    Value: !Ref RDSSecurityGroup
+    Export:
+      Name: RDSsg
+
+  ALBsg:
+    Value: !Ref ALBSecurityGroup
+    Export:
+      Name: ALBsg

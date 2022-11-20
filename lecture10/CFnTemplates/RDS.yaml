@@ -1,0 +1,90 @@
+AWSTemplateFormatVersion: "2010-09-09"
+
+Description: Create RDS
+
+Parameters:
+# マスターパスワード
+  MasterUserPassword:
+    Type: String
+    Description: Password for master user of DB Instance
+    NoEcho: true
+
+Resources:
+# サブネットグループ作成
+  RDSDBSubnetGroup:
+    Type: "AWS::RDS::DBSubnetGroup"
+    Properties:
+      DBSubnetGroupDescription: "For RDS"
+      DBSubnetGroupName: "dbsubnets"
+      SubnetIds: 
+      - !ImportValue Pri-SubId1
+      - !ImportValue Pri-SubId2
+      Tags: 
+      - 
+        Key: "Name"
+        Value: "lecture10"
+
+# パラメータグループ作成
+  RDSDBParameterGroup:
+    Type: 'AWS::RDS::DBParameterGroup'
+    Properties:
+      Description: CloudFormation  MySQL Parameter Group
+      Family: mysql8.0
+      Parameters:
+        sql_mode: IGNORE_SPACE
+        character_set_client : utf8mb4
+        character_set_connection : utf8mb4
+        character_set_database : utf8mb4
+        character_set_results : utf8mb4
+        character_set_server : utf8mb4
+        skip-character-set-client-handshake : 1
+        time_zone: Asia/Tokyo
+        default_password_lifetime : 0
+      Tags: 
+      - 
+        Key: "Name"
+        Value: "lecture10"
+
+#RDSインスタンス作成
+  RDSInstance:
+    Type: "AWS::RDS::DBInstance"
+    UpdateReplacePolicy: Retain
+    DeletionPolicy: Retain
+    Properties:
+      DBInstanceIdentifier: "mydbinstance"
+      DBInstanceClass: "db.t3.micro"
+      Engine: "mysql"
+      EngineVersion: "8.0.28"
+      MasterUsername: "admin"
+      MasterUserPassword: !Ref MasterUserPassword
+      DBName: "myrds"
+      BackupRetentionPeriod: 7
+      MultiAZ: false
+      PubliclyAccessible: false
+      StorageType: "gp2"
+      AllocatedStorage: 20
+      StorageEncrypted: true
+      CopyTagsToSnapshot: true
+      DeleteAutomatedBackups: true
+      DeletionProtection: false
+      DBParameterGroupName: !Ref RDSDBParameterGroup
+      DBSubnetGroupName: !Ref RDSDBSubnetGroup
+      VPCSecurityGroups: 
+      - !ImportValue RDSsg
+      EnableCloudwatchLogsExports:
+      - general
+      - error
+      - slowquery
+      - audit
+
+      AvailabilityZone: !Select 
+        - 0
+        - Fn::GetAZs: !Ref "AWS::Region"
+      AutoMinorVersionUpgrade: true
+
+      Tags: 
+      - 
+        Key: "Name"
+        Value: "lecture10"
+      
+
