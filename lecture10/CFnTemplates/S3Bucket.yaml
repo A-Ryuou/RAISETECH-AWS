@@ -1,0 +1,69 @@
+AWSTemplateFormatVersion: '2010-09-09'
+
+Description: Create S3Bucket for ALB Access Log
+
+Resources:
+# ALBアクセスログ用
+  S3BucketforALBLogs:
+    Type: AWS::S3::Bucket
+    DeletionPolicy: Delete
+    Properties:
+      BucketName: alb-logs-lecture10
+      AccessControl: Private
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: True
+        BlockPublicPolicy: True
+        IgnorePublicAcls: True
+        RestrictPublicBuckets: True
+      LifecycleConfiguration:
+        Rules:
+          - Id: AutoDelete
+            Status: Enabled
+            ExpirationInDays: 14
+      Tags: 
+      - 
+        Key: "Name"
+        Value: "lecture10"
+
+# ALBアクセスログ用のバケットポリシー
+  ELBLogBucketPolicy:
+    Type: "AWS::S3::BucketPolicy"
+    Properties:
+      Bucket: !Ref S3BucketforALBLogs
+      PolicyDocument:
+        Id: "ALB-AccessLogs-Policy"
+        Version: "2012-10-17"
+        Statement:
+          - Sid: "AlbLogs"
+            Effect: "Allow"
+            Action:
+              - "s3:PutObject"
+            Resource: !Sub "arn:aws:s3:::${S3BucketforALBLogs}/AWSLogs/${AWS::AccountId}/*"
+            Principal:
+              AWS: arn:aws:iam::582318560864:root
+
+          - Sid: "AWSLogDeliveryWrite"
+            Effect: "Allow"
+            Action:
+              - "s3:PutObject"
+            Condition: 
+              StringEquals:
+                s3:x-amz-acl: bucket-owner-full-control
+            Resource: !Sub "arn:aws:s3:::${S3BucketforALBLogs}/AWSLogs/${AWS::AccountId}/*"
+            Principal:
+              Service: delivery.logs.amazonaws.com
+
+          - Sid: "AWSLogDeliveryAclCheck"
+            Effect: "Allow"
+            Action:
+              - "s3:GetBucketAcl"
+            Resource: !GetAtt S3BucketforALBLogs.Arn
+            Principal:
+              Service: delivery.logs.amazonaws.com
+
+Outputs:
+
+  S3Bucket:
+    Value: !Ref S3BucketforALBLogs
+    Export:
+      Name: S3Bucket

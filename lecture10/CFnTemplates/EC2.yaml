@@ -1,0 +1,97 @@
+AWSTemplateFormatVersion: "2010-09-09"
+
+Description: Create EC2
+
+Parameters:
+# AMI選択
+  AMIImage:
+    Type: AWS::EC2::Image::Id
+    Description: Choose AMI Image
+
+# SSH接続用のキーペア
+  KeyPair:
+    Type: AWS::EC2::KeyPair::KeyName
+    Description: Choose Keypair
+
+Resources:
+
+#EC2の起動テンプレート作成
+  EC2LaunchTemplate:
+    Type: AWS::EC2::LaunchTemplate
+    Properties:
+      LaunchTemplateName: ec2-launch-template
+      LaunchTemplateData:
+        TagSpecifications:
+          - ResourceType: instance
+            Tags:
+              - Key: Name
+                Value: ec2-instance-lecture10
+          - ResourceType: volume
+            Tags:
+              - Key: Name
+                Value: ec2-instance-lecture10
+          - ResourceType: network-interface
+            Tags:
+              - Key: Name
+                Value: ec2-instance-lecture10
+        BlockDeviceMappings:
+          - DeviceName: "/dev/xvda"
+            Ebs:
+              VolumeType: gp2
+              VolumeSize: "8"
+              DeleteOnTermination: "true"
+        KeyName: !Ref KeyPair
+        NetworkInterfaces:
+          - AssociatePublicIpAddress: "true"
+            DeviceIndex: "0"
+            SubnetId: !ImportValue Pub-SubId1
+            Groups:
+              - !ImportValue EC2sg
+        EbsOptimized: false
+        ImageId: !Ref AMIImage
+        Monitoring:
+          Enabled: "false"
+        InstanceType: t2.micro
+        CreditSpecification:
+          CpuCredits: "standard"
+        DisableApiTermination: "false"
+        PrivateDnsNameOptions:
+          EnableResourceNameDnsARecord: "true"
+
+# テンプレートをもとにしたEC2作成
+  EC2Instance:
+    Type: AWS::EC2::Instance
+    Properties:
+      LaunchTemplate:
+        LaunchTemplateId: !Ref EC2LaunchTemplate
+        Version: !GetAtt EC2LaunchTemplate.LatestVersionNumber
+      DisableApiTermination: "false"
+      # 起動時yumアップデート
+      UserData: 
+        Fn::Base64: |
+          #!/bin/bash
+          sudo yum -y update
+      Tags: 
+      - 
+        Key: "Name"
+        Value: "lecture10"
+
+#Elastic IP付与
+  ElasticIP:
+    Type: "AWS::EC2::EIP"
+    Properties:
+      Domain: vpc
+
+#Elastic IP関連付け
+  ElasticIPAssociate:
+    Type: AWS::EC2::EIPAssociation
+    Properties: 
+      AllocationId: !GetAtt ElasticIP.AllocationId
+      InstanceId: !Ref EC2Instance
+
+Outputs:
+
+  EC2:
+    Value: !Ref EC2Instance
+    Export:
+      Name: EC2
