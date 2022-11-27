@@ -13,7 +13,7 @@ Parameters:
 Resources:
   # VPC作成
   TestVPC:
-    Type: AWS::EC2::VPCあ
+    Type: AWS::EC2::VPC
     Properties:
       CidrBlock: 10.1.0.0/16
       EnableDnsHostnames: true
