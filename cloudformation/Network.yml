@@ -3,55 +3,50 @@ AWSTemplateFormatVersion: "2010-09-09"
 Description: VPC to Subnet
 
 Parameters:
-
-# VPCフローログの保持期間
+  # VPCフローログの保持期間
   RetentionInDays:
     Description: VPCFlowLog retention period
-    AllowedValues: [ 1, 3, 5, 7, 14, 30, 60, 90, 120, 150, 180, 365]
+    AllowedValues: [1, 3, 5, 7, 14, 30, 60, 90, 120, 150, 180, 365]
     Type: Number
     Default: 30
 
 Resources:
-# VPC作成
+  # VPC作成
   TestVPC:
-    Type: AWS::EC2::VPC
+    Type: AWS::EC2::VPCあ
     Properties:
       CidrBlock: 10.1.0.0/16
       EnableDnsHostnames: true
       EnableDnsSupport: true
-      Tags: 
-      - 
-        Key: "Name"
-        Value: "lecture10"
+      Tags:
+        - Key: "Name"
+          Value: "lecture10"
 
-
-# IGW作成
+  # IGW作成
   TestIGW:
     Type: AWS::EC2::InternetGateway
     Properties:
-      Tags: 
-      - 
-        Key: "Name"
-        Value: "lecture10"
+      Tags:
+        - Key: "Name"
+          Value: "lecture10"
 
-# IQWをVPCにアタッチ
+  # IQWをVPCにアタッチ
   AttachGateway:
     Type: AWS::EC2::VPCGatewayAttachment
     Properties:
       VpcId: !Ref TestVPC
       InternetGatewayId: !Ref TestIGW
 
-# パブリックサブネット用のルートテーブル作成
+  # パブリックサブネット用のルートテーブル作成
   TestRouteTablePublic:
     Type: AWS::EC2::RouteTable
     Properties:
       VpcId: !Ref TestVPC
-      Tags: 
-      - 
-        Key: "Name"
-        Value: "lecture10"
+      Tags:
+        - Key: "Name"
+          Value: "lecture10"
 
-# パブリックサブネット用のルーティング
+  # パブリックサブネット用のルーティング
   PublicRoute:
     Type: AWS::EC2::Route
     DependsOn: AttachGateway
@@ -60,138 +55,133 @@ Resources:
       DestinationCidrBlock: 0.0.0.0/0
       GatewayId: !Ref TestIGW
 
-# プライベートサブネット用のルートテーブル作成
+  # プライベートサブネット用のルートテーブル作成
   TestRouteTablePrivate:
     Type: AWS::EC2::RouteTable
     Properties:
       VpcId: !Ref TestVPC
-      Tags: 
-      - 
-        Key: "Name"
-        Value: "lecture10"
+      Tags:
+        - Key: "Name"
+          Value: "lecture10"
 
-# パブリックサブネット作成
+  # パブリックサブネット作成
   TestPublicSubNet1:
     Type: AWS::EC2::Subnet
     DependsOn: AttachGateway
     Properties:
-      AvailabilityZone: !Select 
+      AvailabilityZone: !Select
         - 0
-        - Fn::GetAZs: !Ref 'AWS::Region'
+        - Fn::GetAZs: !Ref "AWS::Region"
       VpcId: !Ref TestVPC
       CidrBlock: 10.1.0.0/20
-      MapPublicIpOnLaunch: 'true'
-      Tags: 
-      - 
-        Key: "Name"
-        Value: "lecture10"
+      MapPublicIpOnLaunch: "true"
+      Tags:
+        - Key: "Name"
+          Value: "lecture10"
 
-# パブリックサブネット作成その2
+  # パブリックサブネット作成その2
   TestPublicSubNet2:
     Type: AWS::EC2::Subnet
     DependsOn: AttachGateway
     Properties:
-      AvailabilityZone: !Select 
+      AvailabilityZone: !Select
         - 1
-        - Fn::GetAZs: !Ref 'AWS::Region'
+        - Fn::GetAZs: !Ref "AWS::Region"
       VpcId: !Ref TestVPC
       CidrBlock: 10.1.16.0/20
-      MapPublicIpOnLaunch: 'true'
-      Tags: 
-      - 
-        Key: "Name"
-        Value: "lecture10"
+      MapPublicIpOnLaunch: "true"
+      Tags:
+        - Key: "Name"
+          Value: "lecture10"
 
-# プライベートサブネット作成
+  # プライベートサブネット作成
   TestPrivateSubNet1:
     Type: AWS::EC2::Subnet
     DependsOn: AttachGateway
     Properties:
-      AvailabilityZone: !Select 
+      AvailabilityZone: !Select
         - 0
-        - Fn::GetAZs: !Ref 'AWS::Region'
+        - Fn::GetAZs: !Ref "AWS::Region"
       VpcId: !Ref TestVPC
       CidrBlock: 10.1.128.0/20
-      MapPublicIpOnLaunch: 'false'
-      Tags: 
-      - 
-        Key: "Name"
-        Value: "lecture10"
+      MapPublicIpOnLaunch: "false"
+      Tags:
+        - Key: "Name"
+          Value: "lecture10"
 
-# プライベートサブネット作成その2
+  # プライベートサブネット作成その2
   TestPrivateSubNet2:
     Type: AWS::EC2::Subnet
     DependsOn: AttachGateway
     Properties:
-      AvailabilityZone: !Select 
+      AvailabilityZone: !Select
         - 1
-        - Fn::GetAZs: !Ref 'AWS::Region'
+        - Fn::GetAZs: !Ref "AWS::Region"
       VpcId: !Ref TestVPC
       CidrBlock: 10.1.144.0/20
-      MapPublicIpOnLaunch: 'false'
-      Tags: 
-      - 
-        Key: "Name"
-        Value: "lecture10"
+      MapPublicIpOnLaunch: "false"
+      Tags:
+        - Key: "Name"
+          Value: "lecture10"
 
-# パブリックサブネットへのルートテーブル関連付け
+  # パブリックサブネットへのルートテーブル関連付け
 
   PublicSubnetRouteTableAssociation1:
     Type: AWS::EC2::SubnetRouteTableAssociation
     Properties:
       SubnetId: !Ref TestPublicSubNet1
       RouteTableId: !Ref TestRouteTablePublic
-  
+
   PublicSubnetRouteTableAssociation2:
     Type: AWS::EC2::SubnetRouteTableAssociation
     Properties:
       SubnetId: !Ref TestPublicSubNet2
       RouteTableId: !Ref TestRouteTablePublic
 
-# プライベートサブネットへのルートテーブル関連付け
+  # プライベートサブネットへのルートテーブル関連付け
 
   PrivateSubnetRouteTableAssociation1:
     Type: AWS::EC2::SubnetRouteTableAssociation
     Properties:
       SubnetId: !Ref TestPrivateSubNet1
       RouteTableId: !Ref TestRouteTablePrivate
-  
+
   PrivateSubnetRouteTableAssociation2:
     Type: AWS::EC2::SubnetRouteTableAssociation
     Properties:
       SubnetId: !Ref TestPrivateSubNet2
       RouteTableId: !Ref TestRouteTablePrivate
 
-# フローログ用のIAMロールとIAMポリシー設定
-  VPCFlowLogsIAMRole: 
+  # フローログ用のIAMロールとIAMポリシー設定
+  VPCFlowLogsIAMRole:
     Type: "AWS::IAM::Role"
-    Properties: 
-      RoleName: vpcflowlogs-role 
-      AssumeRolePolicyDocument: 
+    Properties:
+      RoleName: vpcflowlogs-role
+      AssumeRolePolicyDocument:
         Version: "2012-10-17"
-        Statement: 
+        Statement:
           - Effect: Allow
-            Principal: 
-              Service: 
+            Principal:
+              Service:
                 - "vpc-flow-logs.amazonaws.com"
-            Action: 
+            Action:
               - "sts:AssumeRole"
 
       Policies:
-      - PolicyName: vpcflowlogs-policy
-        PolicyDocument:
-          Version: "2012-10-17"
-          Statement:
-          - Effect: Allow
-            Action:
-            - "logs:CreateLogGroup"
-            - "logs:CreateLogStream"
-            - "logs:PutLogEvents"
-            - "logs:DescribeLogGroups"
-            - "logs:DescribeLogStreams"
-            Resource: "*"
+        - PolicyName: vpcflowlogs-policy
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - "logs:CreateLogGroup"
+                  - "logs:CreateLogStream"
+                  - "logs:PutLogEvents"
+                  - "logs:DescribeLogGroups"
+                  - "logs:DescribeLogStreams"
+                Resource: "*"
 
-# ロググループの作成
+  # ロググループの作成
   LogGroup:
     Type: "AWS::Logs::LogGroup"
     UpdateReplacePolicy: Delete
@@ -200,7 +190,7 @@ Resources:
       LogGroupName: pcflowlogs-group
       RetentionInDays: !Ref RetentionInDays
 
-# フローログ
+  # フローログ
   VPCFlowLogs:
     Type: "AWS::EC2::FlowLog"
     Properties:
@@ -211,7 +201,6 @@ Resources:
       TrafficType: ALL
 
 Outputs:
-
   VpcId:
     Value: !Ref TestVPC
     Export:
@@ -226,7 +215,7 @@ Outputs:
     Value: !Ref TestPublicSubNet2
     Export:
       Name: Pub-SubId2
-  
+
   PriSub1Id:
     Value: !Ref TestPrivateSubNet1
     Export:
@@ -236,10 +225,3 @@ Outputs:
     Value: !Ref TestPrivateSubNet2
     Export:
       Name: Pri-SubId2
-
-
-
-
-
-
-
